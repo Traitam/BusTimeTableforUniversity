@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: ee99fde78e4dfb64f97b3d8ade890203
+timeCreated: 1484392872
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: GenEi Gothic N
+  fontNames:
+  - GenEi Gothic N
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 57032ddd56db2f64b95d947fd82acc1c, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
