@@ -77,7 +77,11 @@ public class JsonTest : MonoBehaviour {
     IEnumerator JsonYobi()
     {
         Debug.Log("JsonYobi Reload.");
+#if UNITY_ANDROID
+        filepath = "file://" + Application.persistentDataPath +"/"+ jsonName;
+#else
         filepath = "file://" + Application.streamingAssetsPath +"/"+ jsonName;
+#endif
         WWW www = new WWW(filepath);
         yield return www;
 
