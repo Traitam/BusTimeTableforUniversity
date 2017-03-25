@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
-using System.IO;
 using System.Globalization;
 using System.Linq;
-
 /*
  * 大学帰宅時刻表 
  * やんないといけない実装
@@ -18,9 +16,6 @@ using System.Linq;
  * 　時刻をjsonで管理
  * 　次回、次々回のバス到着時刻表示
  * 　
- * 
- * 
- * 
  */
 
 public class MyJsonData
@@ -34,150 +29,246 @@ public class MyJsonData
     public string[] kitadoyo;
     public string[] kumagaya;
     public string[] kumadoyo;
-
 }
 
-public class JsonTest : MonoBehaviour {
+public struct ViewInfo
+{
+    public string[] _viewTakasaka;
+    public string[] _viewKitasakado;
+    public string[] _viewKumagaya;
+    public string _hitokoto;
+}
 
-    private string filepath = "";
-    public string jsonName="jsonTest.json";
-    public Text nowTime;
-    public Text takasakaZikai;
-    public Text kitasakaZikai;
-    public Text kumagayaZikai;
-    public Text hitokoto;
+public enum BusPlace
+{
+    Takasaka = 0,
+    Kitasakado = 1,
+    Kumagaya = 2,
+    other = 99
+}
+
+
+public class JsonTest : MonoBehaviour
+{
+
+    private string _filepath = "";
+    [SerializeField]
+    private string jsonName = "jsonTest.json";
+    [SerializeField]
+    private Text nowTime;
+    [SerializeField]
+    private Text takasakaZikai;
+    [SerializeField]
+    private Text kitasakaZikai;
+    [SerializeField]
+    private Text kumagayaZikai;
+    [SerializeField]
+    private Text hitokoto;
 
     MyJsonData data;
 
-    private float time =0.0f;
-    private CultureInfo ci;
-    private DateTime dt;
-    private DayOfWeek week;
+    private float time = 0.0f;
+    private CultureInfo _cultureInfo;
+    private DateTime _dateTime;
+    private DayOfWeek _week;
 
-	// Use this for initialization
-    void Start()
+    private ViewInfo _viewInfo;
+
+
+
+    // Use this for initialization
+    private void Start()
     {
-        ci = new CultureInfo("ja-JP", false);
-        StartCoroutine("JsonYobi");
+        Initialize();
     }
-	
-	 //Update is called once per frame
-	void Update () {
+
+    //Update is called once per frame
+    private void Update()
+    {
         time += Time.deltaTime;
-        Debug.Log(time.ToString("f2"));
+        View(time);
+    }
+
+    #region Initialize
+    private void Initialize()
+    {
+#if UNITY_ANDROID
+        _filepath = "file://" + Application.persistentDataPath +"/"+ jsonName;
+#else
+        _filepath = "file://" + Application.streamingAssetsPath + "/" + jsonName;
+#endif
+        _cultureInfo = new CultureInfo("ja-JP", false);
+        data = new MyJsonData();
+        _viewInfo = new ViewInfo();
+        ViewInitialize();   
+        StartCoroutine(LoadJson(_viewInfo));
+
+    }
+    #endregion
+
+    public void View(float time)
+    {
         if (time >= 10.0f)
         {
-            StartCoroutine("JsonYobi");
+            ViewInitialize();
+            StartCoroutine(LoadJson(_viewInfo));
             time = 0.0f;
+
+            //各種テキスト記述
+
         }
-        nowTime.text =DateTime.Now.ToString(ci) + "\n" + DateTime.Now.ToString("dddd" ,ci);
-	}
+        Debug.Log(time.ToString("f2"));
+        nowTime.text = DateTime.Now.ToString(_cultureInfo) + "\n" + DateTime.Now.ToString("dddd", _cultureInfo);
+
+    }
+
+    public void ViewInitialize()
+    {
+        takasakaZikai.text = "";
+        kitasakaZikai.text = "";
+        kumagayaZikai.text = "";
+    }
 
 
-    IEnumerator JsonYobi()
+
+    IEnumerator LoadJson(ViewInfo viewInfo)
     {
         Debug.Log("JsonYobi Reload.");
-#if UNITY_ANDROID
-        filepath = "file://" + Application.persistentDataPath +"/"+ jsonName;
-#else
-        filepath = "file://" + Application.streamingAssetsPath +"/"+ jsonName;
-#endif
-        WWW www = new WWW(filepath);
+        WWW www = new WWW(_filepath);
         yield return www;
 
         if (www.bytesDownloaded == 0)
         {
-            hitokoto.text = "jsonが無いか、名前が間違ってて読み込めない:;(∩´﹏`∩);:";
-            hitokoto.color = Color.red;
+            ErrorMessage();
             yield break;
         }
 
-        data = JsonUtility.FromJson<MyJsonData>(www.text);
+        PerseJson(www.text);
+    }
+
+    public void ErrorMessage()
+    {
+        hitokoto.text = "jsonが無いか、名前が間違ってて読み込めない:;(∩´﹏`∩);:";
+        hitokoto.color = Color.red;
+    }
+
+    public void PerseJson(string wwwText)
+    {
+        data = JsonUtility.FromJson<MyJsonData>(wwwText);
 
         hitokoto.text = data.text;
 
-        Debug.Log(www.text);
         Debug.Log(data.takasaka[0] + data.id + data.val + data.text);
 
-        TakasakaTimes();
-        KitasakaTimes();
-        KumagayaTimes();
+        MiddleViewtime();
 
     }
 
-    public void TakasakaTimes()
+    public void MiddleViewtime()
     {
-        takasakaZikai.text = "";
-        DisplayTimes(takasakaZikai,data.takasaka,data.takadoyo);
+        PlaceTimes(BusPlace.Takasaka);
+        PlaceTimes(BusPlace.Kitasakado);
+        PlaceTimes(BusPlace.Kumagaya);
     }
 
-    public void KitasakaTimes()
+    public void PlaceTimes(BusPlace busPlace)
     {
-        kitasakaZikai.text = "";
-        DisplayTimes(kitasakaZikai,data.kitasakado,data.kitadoyo);
-
-    }
-
-    public void KumagayaTimes()
-    {
-        kumagayaZikai.text = "";
-        DisplayTimes(kumagayaZikai,data.kumagaya,data.kumadoyo);
-    }
-
-    public void DisplayTimes(Text zikai,string[] heizitu,string[] doyo)
-    {
-        dt = DateTime.Now;
-        week = dt.DayOfWeek;
-
-        if (week != DayOfWeek.Saturday && week != DayOfWeek.Sunday)
+        switch (busPlace)
         {
-            SetTimes(zikai, heizitu, doyo);
+            case BusPlace.Takasaka:
+                CheeseTimes(takasakaZikai, data.takasaka, data.takadoyo);
+                break;
+            case BusPlace.Kitasakado:
+                CheeseTimes(kitasakaZikai, data.kitasakado, data.kitadoyo);
+                break;
+            case BusPlace.Kumagaya:
+                CheeseTimes(kumagayaZikai, data.kumagaya, data.kumadoyo);
+                break;
+            case BusPlace.other:
+                break;
         }
-        else if (week == DayOfWeek.Saturday)
+
+    }
+
+    public void CheeseTimes(Text zikai, string[] heizitu, string[] doyo)
+    {
+        _dateTime = DateTime.Now;
+        _week = _dateTime.DayOfWeek;
+
+        if (_week != DayOfWeek.Saturday && _week != DayOfWeek.Sunday)
         {
-            SetTimes(zikai, heizitu, doyo);
+            SetTimes(heizitu);
+        }
+        else if (_week == DayOfWeek.Saturday)
+        {
+            SetTimes(doyo);
         }
         else
         {
-            zikai.text += "本日の便はありません";
-            zikai.color = Color.black;
         }
     }
 
-    public void SetTimes(Text zikai, string[] heizitu, string[] doyo)
+    public void SetTimes(string[] timeTable)
     {
-
+        //Listに2つ表示用時刻追加
         List<string> zikoku = new List<string>();
-        for (int i = 0; i < heizitu.Length; i++)
+        for (int i = 0; i < timeTable.Length; i++)
         {
-            DateTime dt2 = DateTime.Parse(heizitu[i]);
-            Debug.Log(dt + "////" + dt2);
+            DateTime dt2 = DateTime.Parse(timeTable[i]);
+            //Debug.Log(dt + "////" + dt2);
 
-            if (dt <= dt2)
+            if (_dateTime <= dt2)
             {
                 //この内部処理内、dt2で扱わないと1つ前が通らなかった
                 zikoku.Add(dt2.ToString("HH:mm"));
-                Debug.Log(dt2.ToString("HH:mm"));
+                //Debug.Log(dt2.ToString("HH:mm"));
             }
 
         }
-        if (zikoku.Count >= 2)
+        InputInfo(BusPlace.Takasaka, zikoku);
+        InputInfo(BusPlace.Kitasakado, zikoku);
+        InputInfo(BusPlace.Kumagaya, zikoku);
+
+    }
+
+    public void InputInfo(BusPlace place ,List<string> viewList)
+    {
+        switch (place)
         {
-            zikai.text += "次回　　：" + zikoku.FirstOrDefault() + "\n";
-            zikai.text += "次々回　：" + zikoku[1] + "\n";
-            zikai.color = Color.black;
+            case BusPlace.Takasaka:
+                InputDatas(place, viewList, takasakaZikai);
+                break;
+            case BusPlace.Kitasakado:
+                InputDatas(place, viewList, kitasakaZikai);
+                break;
+            case BusPlace.Kumagaya:
+                InputDatas(place, viewList, kumagayaZikai);
+                break;
+            case BusPlace.other:
+                break;
         }
-        else if (zikoku.Count == 1)
+
+    }
+
+    public void InputDatas(BusPlace place, List<string> viewList,Text ViewText)
+    {
+        if (viewList.Count >= 2)
         {
-            zikai.text += "次回　　：" + zikoku.FirstOrDefault() + "\n";
-            zikai.text += "上記便が最終です\n";
-            zikai.color = Color.red;
+            ViewText.text += "次回　　：" + viewList.FirstOrDefault() + "\n";
+            ViewText.text += "次々回　：" + viewList[1] + "\n";
+            ViewText.color = Color.black;
+        }
+        else if (viewList.Count == 1)
+        {
+            ViewText.text += "次回　　：" + viewList.FirstOrDefault() + "\n";
+            ViewText.text += "上記便が最終です\n";
+            ViewText.color = Color.red;
         }
         else
         {
-            zikai.text += "本日の便はありません";
+            ViewText.text += "本日の便はありません";
+            ViewText.color = Color.black;
         }
-
 
     }
 
