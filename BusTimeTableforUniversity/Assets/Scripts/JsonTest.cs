@@ -86,7 +86,14 @@ public class JsonTest : MonoBehaviour
     private void Update()
     {
         time += Time.deltaTime;
-        View(time);
+        if(time >= 10)
+        {
+            View();
+            time = 0.0f;
+        }
+        Debug.Log(time.ToString("f2"));
+        nowTime.text = DateTime.Now.ToString(_cultureInfo) + "\n" + DateTime.Now.ToString("dddd", _cultureInfo);
+
     }
 
     #region Initialize
@@ -106,20 +113,10 @@ public class JsonTest : MonoBehaviour
     }
     #endregion
 
-    public void View(float time)
+    public void View()
     {
-        if (time >= 10.0f)
-        {
             ViewInitialize();
             StartCoroutine(LoadJson(_viewInfo));
-            time = 0.0f;
-
-            //各種テキスト記述
-
-        }
-        Debug.Log(time.ToString("f2"));
-        nowTime.text = DateTime.Now.ToString(_cultureInfo) + "\n" + DateTime.Now.ToString("dddd", _cultureInfo);
-
     }
 
     public void ViewInitialize()

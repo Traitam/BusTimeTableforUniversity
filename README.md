@@ -7,5 +7,5 @@ jsonファイルから時刻を取得し、次回バスと次々回バスの時�
 jsonファイルからデータを取得し、UnityとC#で色々いじる勉強を兼ねて作ったものです。
 
 開発環境<br>
-Unity5.5.0f3<br>
+Unity5.5.2f1<br>
 VisualStudio2015
