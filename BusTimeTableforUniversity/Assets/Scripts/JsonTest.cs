@@ -5,18 +5,6 @@ using UnityEngine.UI;
 using System;
 using System.Globalization;
 using System.Linq;
-/*
- * 大学帰宅時刻表 
- * やんないといけない実装
- * 　休業中ダイヤ分岐実装
- * 　コメント挿入
- * 　
- * やってる実装 
- * 　平日・土曜時刻分け
- * 　時刻をjsonで管理
- * 　次回、次々回のバス到着時刻表示
- * 　
- */
 
 public class MyJsonData
 {
@@ -74,7 +62,7 @@ public class JsonTest : MonoBehaviour
 
     private ViewInfo _viewInfo;
 
-
+    private List<string> zikoku;
 
     // Use this for initialization
     private void Start()
@@ -91,7 +79,7 @@ public class JsonTest : MonoBehaviour
             View();
             time = 0.0f;
         }
-        Debug.Log(time.ToString("f2"));
+        //Debug.Log(time.ToString("f2"));
         nowTime.text = DateTime.Now.ToString(_cultureInfo) + "\n" + DateTime.Now.ToString("dddd", _cultureInfo);
 
     }
@@ -115,7 +103,7 @@ public class JsonTest : MonoBehaviour
 
     public void View()
     {
-            ViewInitialize();
+            //ViewInitialize();
             StartCoroutine(LoadJson(_viewInfo));
     }
 
@@ -174,12 +162,16 @@ public class JsonTest : MonoBehaviour
         {
             case BusPlace.Takasaka:
                 CheeseTimes(takasakaZikai, data.takasaka, data.takadoyo);
+                InputDatas(BusPlace.Takasaka, zikoku,takasakaZikai);
                 break;
             case BusPlace.Kitasakado:
                 CheeseTimes(kitasakaZikai, data.kitasakado, data.kitadoyo);
+                InputDatas(BusPlace.Kitasakado, zikoku, kitasakaZikai);
                 break;
             case BusPlace.Kumagaya:
                 CheeseTimes(kumagayaZikai, data.kumagaya, data.kumadoyo);
+                InputDatas(BusPlace.Kumagaya, zikoku, kumagayaZikai);
+
                 break;
             case BusPlace.other:
                 break;
@@ -187,6 +179,12 @@ public class JsonTest : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// 平日か土曜か見る
+    /// </summary>
+    /// <param name="zikai"></param>
+    /// <param name="heizitu"></param>
+    /// <param name="doyo"></param>
     public void CheeseTimes(Text zikai, string[] heizitu, string[] doyo)
     {
         _dateTime = DateTime.Now;
@@ -208,7 +206,7 @@ public class JsonTest : MonoBehaviour
     public void SetTimes(string[] timeTable)
     {
         //Listに2つ表示用時刻追加
-        List<string> zikoku = new List<string>();
+        zikoku = new List<string>();
         for (int i = 0; i < timeTable.Length; i++)
         {
             DateTime dt2 = DateTime.Parse(timeTable[i]);
@@ -222,28 +220,6 @@ public class JsonTest : MonoBehaviour
             }
 
         }
-        InputInfo(BusPlace.Takasaka, zikoku);
-        InputInfo(BusPlace.Kitasakado, zikoku);
-        InputInfo(BusPlace.Kumagaya, zikoku);
-
-    }
-
-    public void InputInfo(BusPlace place ,List<string> viewList)
-    {
-        switch (place)
-        {
-            case BusPlace.Takasaka:
-                InputDatas(place, viewList, takasakaZikai);
-                break;
-            case BusPlace.Kitasakado:
-                InputDatas(place, viewList, kitasakaZikai);
-                break;
-            case BusPlace.Kumagaya:
-                InputDatas(place, viewList, kumagayaZikai);
-                break;
-            case BusPlace.other:
-                break;
-        }
 
     }
 
@@ -251,19 +227,20 @@ public class JsonTest : MonoBehaviour
     {
         if (viewList.Count >= 2)
         {
-            ViewText.text += "次回　　：" + viewList.FirstOrDefault() + "\n";
+            ViewText.text = "次回　　：" + viewList.FirstOrDefault() + "\n";
             ViewText.text += "次々回　：" + viewList[1] + "\n";
             ViewText.color = Color.black;
+            Debug.Log("____" + ViewText.ToString());
         }
         else if (viewList.Count == 1)
         {
-            ViewText.text += "次回　　：" + viewList.FirstOrDefault() + "\n";
+            ViewText.text = "次回　　：" + viewList.FirstOrDefault() + "\n";
             ViewText.text += "上記便が最終です\n";
             ViewText.color = Color.red;
         }
         else
         {
-            ViewText.text += "本日の便はありません";
+            ViewText.text = "本日の便はありません";
             ViewText.color = Color.black;
         }
 
